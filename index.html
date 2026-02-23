@@ -235,6 +235,7 @@ body.modal-open{overflow:hidden}
 .order-modal.open{opacity:1;visibility:visible;pointer-events:auto}
 .order-modal-card{width:100%;max-width:460px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px;transform:translateY(24px) scale(.97);opacity:0;transition:transform .35s ease,opacity .35s ease}
 .order-modal.open .order-modal-card{transform:translateY(0) scale(1);opacity:1}
+.order-modal{overflow-y:auto;-webkit-overflow-scrolling:touch}
 .order-modal-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:18px}
 .order-modal-head h3{font-size:1.3rem;color:var(--text-strong)}
 .order-modal-head p{font-size:.92rem;color:var(--text-muted);margin-top:6px}
@@ -765,6 +766,27 @@ const totalPriceEl = document.getElementById('totalPrice');
 
 let selectedProductName = '';
 let selectedUnitPrice = 0;
+let scrollLockY = 0;
+
+function lockBodyScroll() {
+  scrollLockY = window.scrollY || window.pageYOffset || 0;
+  document.body.classList.add('modal-open');
+  document.body.style.position = 'fixed';
+  document.body.style.top = `-${scrollLockY}px`;
+  document.body.style.left = '0';
+  document.body.style.right = '0';
+  document.body.style.width = '100%';
+}
+
+function unlockBodyScroll() {
+  document.body.classList.remove('modal-open');
+  document.body.style.position = '';
+  document.body.style.top = '';
+  document.body.style.left = '';
+  document.body.style.right = '';
+  document.body.style.width = '';
+  window.scrollTo(0, scrollLockY);
+}
 
 function formatMoney(value) {
   return `${new Intl.NumberFormat('uk-UA').format(value)} грн`;
@@ -795,7 +817,7 @@ function openOrderModal(triggerBtn) {
 
   orderModal.classList.add('open');
   orderModal.setAttribute('aria-hidden', 'false');
-  document.body.classList.add('modal-open');
+  lockBodyScroll();
   const firstField = orderModal.querySelector('input[name="name"]');
   if (firstField) firstField.focus();
 }
@@ -803,7 +825,7 @@ function openOrderModal(triggerBtn) {
 function closeOrderModal() {
   orderModal.classList.remove('open');
   orderModal.setAttribute('aria-hidden', 'true');
-  document.body.classList.remove('modal-open');
+  unlockBodyScroll();
 }
 
 document.querySelectorAll('.js-open-order').forEach(btn => {
