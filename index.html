@@ -246,6 +246,18 @@ body.modal-open{overflow:hidden}
 .order-form input:focus{border-color:rgba(0,230,138,.45);box-shadow:0 0 0 3px rgba(0,230,138,.12)}
 .order-form .btn{width:100%;justify-content:center;border-radius:12px}
 .order-note{font-size:.78rem;color:var(--text-muted);text-align:center}
+.order-context{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.24);border-radius:14px;padding:12px 14px;margin-bottom:14px}
+.order-context-row{display:flex;justify-content:space-between;gap:12px;font-size:.86rem}
+.order-context-row + .order-context-row{margin-top:6px}
+.order-context-row span{color:var(--text-muted)}
+.order-context-row strong{color:var(--text-strong);text-align:right}
+.order-total{background:rgba(0,230,138,.09);border:1px solid rgba(0,230,138,.23);border-radius:14px;padding:12px 14px}
+.order-total-row{display:flex;justify-content:space-between;gap:12px;font-size:.86rem;color:var(--text-muted)}
+.order-total-row + .order-total-row{margin-top:6px}
+.order-total-row strong{color:var(--text-strong)}
+.order-total-row.total-row{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08);font-size:.95rem}
+.order-total-row.total-row strong{color:var(--accent);font-size:1.05rem}
+.is-hidden{display:none !important}
 
 </style>
 </head>
@@ -441,7 +453,7 @@ body.modal-open{overflow:hidden}
             <span class="price-current">42&nbsp;000&nbsp;грн</span>
             <span class="price-discount">Знижка</span>
           </div>
-          <button type="button" class="btn btn-primary btn-product js-open-order">📞 Замовити зараз</button>
+          <button type="button" class="btn btn-primary btn-product js-open-order" data-product="OUKITEL P2001E Plus" data-price="42000">📞 Замовити зараз</button>
         </div>
       </div>
 
@@ -507,7 +519,7 @@ body.modal-open{overflow:hidden}
             <span class="price-current">48&nbsp;500&nbsp;грн</span>
             <span class="price-discount">Знижка</span>
           </div>
-          <button type="button" class="btn btn-primary btn-product js-open-order">📞 Замовити зараз</button>
+          <button type="button" class="btn btn-primary btn-product js-open-order" data-product="Jackery Explorer 2000 v2" data-price="48500">📞 Замовити зараз</button>
         </div>
       </div>
     </div>
@@ -673,6 +685,16 @@ body.modal-open{overflow:hidden}
       </div>
       <button type="button" class="order-close" id="orderClose" aria-label="Закрити форму">×</button>
     </div>
+    <div class="order-context">
+      <div class="order-context-row">
+        <span>Тип заявки</span>
+        <strong id="requestType">Замовлення</strong>
+      </div>
+      <div class="order-context-row">
+        <span>Станція</span>
+        <strong id="requestStation">—</strong>
+      </div>
+    </div>
     <form class="order-form">
       <label>
         Ім'я
@@ -682,6 +704,24 @@ body.modal-open{overflow:hidden}
         Номер телефону
         <input type="tel" name="phone" placeholder="+380 XX XXX XX XX" required>
       </label>
+      <label id="quantityWrap">
+        Кількість станцій
+        <input type="number" name="quantity" min="1" step="1" value="1">
+      </label>
+      <div class="order-total" id="orderTotalBox">
+        <div class="order-total-row">
+          <span>Ціна за 1 шт.</span>
+          <strong id="unitPrice">—</strong>
+        </div>
+        <div class="order-total-row">
+          <span>Кількість</span>
+          <strong id="qtyView">1</strong>
+        </div>
+        <div class="order-total-row total-row">
+          <span>Разом</span>
+          <strong id="totalPrice">—</strong>
+        </div>
+      </div>
       <button type="submit" class="btn btn-primary">Відправити заявку</button>
       <p class="order-note">Натискаючи кнопку, ви погоджуєтесь на обробку персональних даних.</p>
     </form>
@@ -714,8 +754,45 @@ document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
 // Order modal
 const orderModal = document.getElementById('orderModal');
 const orderClose = document.getElementById('orderClose');
+const requestTypeEl = document.getElementById('requestType');
+const requestStationEl = document.getElementById('requestStation');
+const quantityWrap = document.getElementById('quantityWrap');
+const quantityInput = orderModal.querySelector('input[name="quantity"]');
+const orderTotalBox = document.getElementById('orderTotalBox');
+const unitPriceEl = document.getElementById('unitPrice');
+const qtyViewEl = document.getElementById('qtyView');
+const totalPriceEl = document.getElementById('totalPrice');
 
-function openOrderModal() {
+let selectedProductName = '';
+let selectedUnitPrice = 0;
+
+function formatMoney(value) {
+  return `${new Intl.NumberFormat('uk-UA').format(value)} грн`;
+}
+
+function getQuantity() {
+  return Math.max(1, Number(quantityInput.value) || 1);
+}
+
+function updateOrderSummary() {
+  const qty = getQuantity();
+
+  requestTypeEl.textContent = 'Замовлення';
+  requestStationEl.textContent = selectedProductName;
+
+  quantityWrap.classList.remove('is-hidden');
+  orderTotalBox.classList.remove('is-hidden');
+  unitPriceEl.textContent = formatMoney(selectedUnitPrice);
+  qtyViewEl.textContent = String(qty);
+  totalPriceEl.textContent = formatMoney(selectedUnitPrice * qty);
+}
+
+function openOrderModal(triggerBtn) {
+  selectedProductName = triggerBtn?.dataset.product || '';
+  selectedUnitPrice = Number(triggerBtn?.dataset.price || 0);
+  quantityInput.value = '1';
+  updateOrderSummary();
+
   orderModal.classList.add('open');
   orderModal.setAttribute('aria-hidden', 'false');
   document.body.classList.add('modal-open');
@@ -730,7 +807,7 @@ function closeOrderModal() {
 }
 
 document.querySelectorAll('.js-open-order').forEach(btn => {
-  btn.addEventListener('click', openOrderModal);
+  btn.addEventListener('click', () => openOrderModal(btn));
 });
 
 orderClose.addEventListener('click', closeOrderModal);
@@ -742,6 +819,8 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && orderModal.classList.contains('open')) closeOrderModal();
 });
 
+quantityInput.addEventListener('input', updateOrderSummary);
+
 const orderForm = orderModal.querySelector('.order-form');
 orderForm.addEventListener('submit', async e => {
   e.preventDefault();
@@ -749,6 +828,11 @@ orderForm.addEventListener('submit', async e => {
   const submitBtn = orderForm.querySelector('button[type="submit"]');
   const name = orderForm.elements.name.value.trim();
   const phone = orderForm.elements.phone.value.trim();
+  const quantity = getQuantity();
+  const price = selectedUnitPrice;
+  const total = price * quantity;
+  const station = selectedProductName;
+  const requestType = 'order';
 
   if (!name || !phone) return;
 
@@ -761,7 +845,12 @@ orderForm.addEventListener('submit', async e => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name,
-        phone
+        phone,
+        request_type: requestType,
+        station,
+        quantity,
+        price,
+        total
       })
     });
 
